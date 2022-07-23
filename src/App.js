@@ -1,30 +1,53 @@
-import logo from './logo.svg';
 import './App.css';
+import Map from './components/Map';
+import Navbar from './components/Navbar'
+import Card from './components/Card';
+import {useEffect,useState} from "react"
+import { connect } from 'react-redux';
+import { get_cliniques } from "./redux/App/app.actions";
 
-import { MapContainer, TileLayer,Marker,Popup } from 'react-leaflet'
-import L, { icon } from 'leaflet'
-const clinicMarker = new L.Icon({
-  iconUrl: require('./imgs/hospital-building.png'),
-  iconSize:[35,45],
-})
-
-
-
-function App() {
+function App(props) {
+  const [location,setLocation] = useState([31.25051027149744,35.08253561201448])
+  useEffect(()=>{
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(successFunction, errorFunction);
+    }
+    else {
+      alert('It seems like Geolocation, which is required for this page, is not enabled in your browser.');
+    }
+    function successFunction(position) {
+      var lat = position.coords.latitude;
+      var long = position.coords.longitude;
+      setLocation([lat,long])
+      props.get_cliniques({longitude:long,latitude:lat})
+    }
+    function errorFunction(position) {
+      alert('Error!');
+    }
+  },[])
   return (
-     <MapContainer center={[31.242986, 35.084657]} zoom={15} scrollWheelZoom={false}>
-  <TileLayer
-    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-  />
-  <Marker position={[31.25051027149744, 35.08253561201448]} icon={clinicMarker} >
-    <Popup>
-      clalit
-    </Popup>
-  </Marker>
-</MapContainer>
-   
+    <div className='container-fluid'>
+      <Navbar />
+      <Card title="Map">
+        <Map location={location} markers={props.cliniques}></Map>
+      </Card>
+    </div>
+
   );
 }
 
-export default App;
+const mapStateToProps = (state) => {
+  return {
+    user:state.app.user,
+    cliniques:state.app.cliniques
+     };
+};
+
+const mapDispatchToProps = (dispatch) => {
+  return {
+    get_cliniques:(point)=>dispatch(get_cliniques(point))
+  };
+};
+
+export default connect(mapStateToProps, mapDispatchToProps)(App);
+
